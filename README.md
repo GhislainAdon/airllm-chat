@@ -1,13 +1,13 @@
 # AirLLM Chat
 
-[![CI](https://img.shields.io/github/actions/workflow/status/YOUR_USERNAME/airllm-chat/ci.yml?branch=main&label=CI&style=flat-square)](https://github.com/YOUR_USERNAME/airllm-chat/actions)
-[![Release](https://img.shields.io/github/v/release/YOUR_USERNAME/airllm-chat?style=flat-square&color=green)](https://github.com/YOUR_USERNAME/airllm-chat/releases)
+[![CI](https://img.shields.io/github/actions/workflow/status/GhislainAdon/airllm-chat/ci.yml?branch=main&label=CI&style=flat-square)](https://github.com/GhislainAdon/airllm-chat/actions)
+[![Release](https://img.shields.io/github/v/release/GhislainAdon/airllm-chat?style=flat-square&color=green)](https://github.com/GhislainAdon/airllm-chat/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey?style=flat-square)](#)
 
 A ChatGPT-style local AI chat interface powered by the **airllm** library. Run large language models entirely on your machine — no cloud, no API keys, no data sent externally.
 
-**Pre-built binaries available on [GitHub Releases](https://github.com/YOUR_USERNAME/airllm-chat/releases) — no Python needed!**
+**Pre-built binaries available on [GitHub Releases](https://github.com/GhislainAdon/airllm-chat/releases) — no Python needed!**
 
 ## Features
 
