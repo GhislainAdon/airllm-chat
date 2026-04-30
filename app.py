@@ -22,6 +22,7 @@ from typing import Optional
 
 from airllm_engine import AirLLMEngine
 
+
 def _read_version() -> str:
     """Read version from VERSION file next to this script."""
     version_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "VERSION")

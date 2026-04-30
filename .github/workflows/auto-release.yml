@@ -353,40 +353,41 @@ jobs:
             COMMITS=$(git log -10 --pretty=format:"- %s (%h)" --no-merges)
           fi
 
-          cat > .release-notes-auto.md << EOF
-          ## What's Changed in $TAG
-
-          $COMMITS
-
-          ---
-
-          ## Downloads
-
-          | Platform | File |
-          |----------|------|
-          | Windows x64 | \`airllm-chat-windows-x64.zip\` |
-          | Linux x64 | \`airllm-chat-linux-x64.tar.gz\` |
-          | macOS | \`airllm-chat-macos.zip\` |
-          | Source (tar.gz) | \`airllm-chat-src.tar.gz\` |
-          | Source (zip) | \`airllm-chat-src.zip\` |
-
-          ### Quick Start
-
-          \`\`\`bash
-          # Linux / macOS
-          tar -xzf airllm-chat-linux-x64.tar.gz   # or unzip airllm-chat-macos.zip
-          ./airllm-chat --model <model_path>
-
-          # Windows
-          # Extract airllm-chat-windows-x64.zip, then run airllm-chat.exe
-          \`\`\`
-
-          ### SHA256 Verification
-
-          \`\`\`bash
-          sha256sum -c SHA256SUMS.txt
-          \`\`\`
-          EOF
+          # Build the release notes dynamically
+          {
+            echo "## What's Changed in ${TAG}"
+            echo ""
+            echo "${COMMITS}"
+            echo ""
+            echo "---"
+            echo ""
+            echo "## Downloads"
+            echo ""
+            echo "| Platform | File |"
+            echo "|----------|------|"
+            echo "| Windows x64 | \`airllm-chat-windows-x64.zip\` |"
+            echo "| Linux x64 | \`airllm-chat-linux-x64.tar.gz\` |"
+            echo "| macOS | \`airllm-chat-macos.zip\` |"
+            echo "| Source (tar.gz) | \`airllm-chat-src.tar.gz\` |"
+            echo "| Source (zip) | \`airllm-chat-src.zip\` |"
+            echo ""
+            echo "### Quick Start"
+            echo ""
+            echo '```bash'
+            echo "# Linux / macOS"
+            echo "tar -xzf airllm-chat-linux-x64.tar.gz   # or unzip airllm-chat-macos.zip"
+            echo "./airllm-chat --model <model_path>"
+            echo ""
+            echo "# Windows"
+            echo "# Extract airllm-chat-windows-x64.zip, then run airllm-chat.exe"
+            echo '```'
+            echo ""
+            echo "### SHA256 Verification"
+            echo ""
+            echo '```bash'
+            echo "sha256sum -c SHA256SUMS.txt"
+            echo '```'
+          } > .release-notes-auto.md
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
