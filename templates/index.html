@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AirLLM Chat</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <span class="logo-icon">&#9889;</span>
+                <span class="logo-text">AirLLM Chat</span>
+            </div>
+            <button id="new-chat-btn" class="btn-new-chat" title="New Chat">+</button>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">Model</div>
+            <select id="model-select" class="model-select">
+                <option value="">-- Select a model --</option>
+            </select>
+            <button id="load-model-btn" class="btn-load">Load Model</button>
+            <div id="model-status" class="model-status">
+                <span class="status-dot idle"></span>
+                <span>No model loaded</span>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">Parameters</div>
+            <div class="param-group">
+                <label for="temp-slider">Temperature: <span id="temp-value">0.7</span></label>
+                <input type="range" id="temp-slider" min="0.0" max="2.0" step="0.1" value="0.7">
+            </div>
+            <div class="param-group">
+                <label for="max-tokens-input">Max Tokens:</label>
+                <input type="number" id="max-tokens-input" value="512" min="16" max="4096" step="16">
+            </div>
+            <button id="save-settings-btn" class="btn-save">Save Settings</button>
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="sidebar-section-title">Chat History</div>
+            <div id="chat-history" class="chat-history">
+                <div class="history-empty">No conversations yet</div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Chat Area -->
+    <main id="main" class="main">
+        <!-- Top Bar -->
+        <header class="top-bar">
+            <button id="toggle-sidebar" class="btn-icon" title="Toggle Sidebar">&#9776;</button>
+            <span class="top-bar-title">New Chat</span>
+            <div class="top-bar-actions">
+                <button id="clear-chat-btn" class="btn-icon" title="Clear Chat">&#128465;</button>
+                <button id="settings-toggle" class="btn-icon" title="Settings">&#9881;</button>
+            </div>
+        </header>
+
+        <!-- Messages -->
+        <div id="chat-messages" class="chat-messages">
+            <div class="welcome-screen" id="welcome-screen">
+                <div class="welcome-icon">&#9889;</div>
+                <h1>AirLLM Chat</h1>
+                <p>Run large language models locally with airllm</p>
+                <div class="welcome-tips">
+                    <div class="tip-card" data-prompt="Explain quantum computing in simple terms">
+                        <div class="tip-icon">&#128218;</div>
+                        <div class="tip-text">"Explain quantum computing in simple terms"</div>
+                    </div>
+                    <div class="tip-card" data-prompt="Write a Python function to sort a list">
+                        <div class="tip-icon">&#128187;</div>
+                        <div class="tip-text">"Write a Python function to sort a list"</div>
+                    </div>
+                    <div class="tip-card" data-prompt="What are the benefits of renewable energy?">
+                        <div class="tip-icon">&#127745;</div>
+                        <div class="tip-text">"What are the benefits of renewable energy?"</div>
+                    </div>
+                    <div class="tip-card" data-prompt="Tell me a creative short story">
+                        <div class="tip-icon">&#9997;&#65039;</div>
+                        <div class="tip-text">"Tell me a creative short story"</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-area">
+            <div class="input-wrapper">
+                <textarea id="user-input" placeholder="Send a message... (Shift+Enter for new line)" rows="1"></textarea>
+                <button id="send-btn" class="btn-send" title="Send Message" disabled>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 2L11 13"></path>
+                        <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
+                    </svg>
+                </button>
+                <button id="stop-btn" class="btn-stop" title="Stop Generation" style="display:none;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <rect x="6" y="6" width="12" height="12" rx="2"></rect>
+                    </svg>
+                </button>
+            </div>
+            <div class="input-footer">
+                <span class="disclaimer">AirLLM runs locally. No data is sent to external servers.</span>
+                <span id="token-counter" class="token-counter"></span>
+            </div>
+        </div>
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+# AirLLM Chat - Requirements
+# Core
+airllm>=0.2.0
+
+# ML Dependencies (usually pulled by airllm, listed for clarity)
+torch>=2.0.0
+transformers>=4.30.0
+accelerate>=0.20.0
+tokenizers>=0.13.0
+safetensors>=0.3.0
+huggingface_hub>=0.15.0
+
+# Build tool (only needed for creating Windows .exe)
+pyinstaller>=5.13.0
