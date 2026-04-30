@@ -78,6 +78,7 @@ class ChatHandler(SimpleHTTPRequestHandler):
         self.send_response(status)
         self.send_header('Content-Type', 'text/html; charset=utf-8')
         self.send_header('Content-Length', str(len(body)))
+        self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
         self.wfile.write(body)
 
@@ -121,6 +122,22 @@ class ChatHandler(SimpleHTTPRequestHandler):
                 {"id": "TheBloke/Llama-2-7B-Chat-GPTQ", "name": "Llama 2 7B Chat (GPTQ)", "size": "7B"},
             ]
             self._send_json({"models": models})
+            return
+
+        # ---- Ollama GET endpoints ----
+
+        if path == '/api/ollama/status':
+            self._send_json(engine.get_ollama_info())
+            return
+
+        if path == '/api/ollama/models':
+            self._send_json(engine.get_ollama_models())
+            return
+
+        # ---- System info GET endpoint ----
+
+        if path == '/api/system/info':
+            self._send_json(engine.get_system_info())
             return
 
         # OpenAI-compatible: /v1/models
@@ -238,7 +255,103 @@ class ChatHandler(SimpleHTTPRequestHandler):
             self._send_json({"status": "ok", "message": "Model unloaded."})
             return
 
+        # ---- Ollama POST endpoints ----
+
+        if path == '/api/ollama/pull':
+            body = self._read_body()
+            if body is None:
+                self._bad_request()
+                return
+            model_name = body.get('model', '')
+            if not model_name:
+                self._bad_request("Missing 'model' field in request body.")
+                return
+            self._handle_ollama_pull(model_name)
+            return
+
+        if path == '/api/ollama/delete':
+            body = self._read_body()
+            if body is None:
+                self._bad_request()
+                return
+            model_name = body.get('model', '')
+            if not model_name:
+                self._bad_request("Missing 'model' field in request body.")
+                return
+            result = engine.delete_ollama_model(model_name)
+            self._send_json(result)
+            return
+
+        if path == '/api/ollama/load':
+            body = self._read_body()
+            if body is None:
+                self._bad_request()
+                return
+            model_name = body.get('model', '')
+            if not model_name:
+                self._bad_request("Missing 'model' field in request body.")
+                return
+            # Resolve the GGUF path from Ollama, then load into airllm
+            path_result = engine.get_ollama_model_path(model_name)
+            if path_result.get("status") != "success":
+                self._send_json(path_result, 400)
+                return
+            gguf_path = path_result["path"]
+            result = engine.set_params(model_path=gguf_path)
+            result["ollama_model"] = model_name
+            result["gguf_path"] = gguf_path
+            self._send_json(result)
+            return
+
+        if path == '/api/ollama/path':
+            body = self._read_body()
+            if body is None:
+                self._bad_request()
+                return
+            custom_path = body.get('path', '')
+            if not custom_path:
+                self._bad_request("Missing 'path' field in request body.")
+                return
+            if '..' in custom_path:
+                self._bad_request("Invalid path: path traversal detected.")
+                return
+            expanded = os.path.expanduser(custom_path)
+            if os.path.isdir(expanded):
+                engine._ollama_models_dir = expanded
+                self._send_json({
+                    "status": "success",
+                    "message": f"Ollama models directory set to: {expanded}",
+                    "path": expanded,
+                })
+            else:
+                self._send_json({
+                    "status": "error",
+                    "message": f"Directory does not exist: {expanded}",
+                }, 400)
+            return
+
         self._send_json({"error": {"message": "Not found", "type": "invalid_request_error", "code": "not_found"}}, 404)
+
+    # ---- Ollama pull SSE handler ----
+
+    def _handle_ollama_pull(self, model_name: str):
+        """Stream ``ollama pull`` progress as Server-Sent Events (SSE)."""
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/event-stream; charset=utf-8')
+        self.send_header('Cache-Control', 'no-cache')
+        self.send_header('Connection', 'keep-alive')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+
+        try:
+            for event in engine.pull_ollama_model(model_name):
+                self.wfile.write(f"data: {json.dumps(event, ensure_ascii=False)}\n\n".encode('utf-8'))
+                self.wfile.flush()
+        except (BrokenPipeError, ConnectionResetError):
+            return
+
+        self.wfile.write(b"data: [DONE]\n\n")
+        self.wfile.flush()
 
     # ---- OpenAI-compatible response builders ----
 
@@ -372,6 +485,8 @@ def main():
     print(f"\n  Web UI:        {url}")
     print(f"  OpenAI API:    {url}/v1/chat/completions")
     print(f"  Models list:   {url}/v1/models")
+    print(f"  Ollama status: {url}/api/ollama/status")
+    print(f"  System info:   {url}/api/system/info")
     print(f"\n  Compatible with: Cline, Continue, Cursor, OpenInterpreter, etc.")
     print(f"  Just set Base URL to: {url}/v1")
     print(f"\n[Server] Press Ctrl+C to stop.\n")
