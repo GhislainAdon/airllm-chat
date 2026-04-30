@@ -20,7 +20,21 @@ def test_engine_info():
     assert "loaded" in info
     assert "max_new_tokens" in info
     assert "temperature" in info
+    assert "version" in info
     assert info["loaded"] is False
+
+
+def test_engine_info_version():
+    """Version should be read from VERSION file, not empty or dev fallback."""
+    e = AirLLMEngine()
+    info = e.info
+    version = info["version"]
+    assert version != "", "Version should not be empty"
+    assert version != "0.0.0-dev", "VERSION file should exist and contain a real version"
+    # Version should be semver-like (X.Y.Z)
+    parts = version.split(".")
+    assert len(parts) >= 2, f"Version '{version}' should have at least major.minor"
+    assert all(p.isdigit() for p in parts), f"Version '{version}' should be numeric segments"
 
 
 def test_set_params():

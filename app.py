@@ -24,8 +24,16 @@ from airllm_engine import AirLLMEngine
 
 
 def _read_version() -> str:
-    """Read version from VERSION file next to this script."""
-    version_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "VERSION")
+    """Read version from VERSION file next to this script.
+
+    Works both in development and when frozen by PyInstaller.
+    When frozen, __file__ points to sys._MEIPASS where VERSION is bundled.
+    """
+    if getattr(sys, 'frozen', False):
+        base_dir = sys._MEIPASS
+    else:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+    version_file = os.path.join(base_dir, "VERSION")
     try:
         with open(version_file, "r", encoding="utf-8") as f:
             return f.read().strip()

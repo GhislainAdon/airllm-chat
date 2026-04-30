@@ -45,6 +45,7 @@ datas = [
     (os.path.join(PROJECT_ROOT, 'templates', 'index.html'), 'templates'),
     (os.path.join(PROJECT_ROOT, 'static', 'style.css'), 'static'),
     (os.path.join(PROJECT_ROOT, 'static', 'app.js'), 'static'),
+    (os.path.join(PROJECT_ROOT, 'VERSION'), '.'),
 ] + airllm_datas
 
 a = Analysis(
