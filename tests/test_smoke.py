@@ -72,9 +72,7 @@ def test_generate_without_model():
     """Generate without model should return error string."""
     e = AirLLMEngine()
     result = e.generate([{"role": "user", "content": "test"}], stream=False)
-    # generate() is a generator function (uses yield), so we must consume it
-    if hasattr(result, '__iter__') and not isinstance(result, str):
-        result = list(result)[0]
+    assert isinstance(result, str), f"Expected str, got {type(result).__name__}"
     assert "No model loaded" in result
 
 

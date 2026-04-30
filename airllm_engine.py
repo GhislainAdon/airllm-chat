@@ -72,12 +72,14 @@ class AirLLMEngine:
         messages: list of {"role": "user"|"assistant", "content": "..."}
         stream: if True, yields tokens as they are generated.
         """
+        if stream:
+            return self._generate_stream(messages)
+        return self._generate_full(messages)
+
+    def _generate_full(self, messages: list[dict]) -> str:
+        """Non-streaming generation — returns a plain string."""
         if not self._loaded or self.model is None:
-            error = "[ERROR] No model loaded. Please load a model first."
-            if stream:
-                yield error
-                return
-            return error
+            return "[ERROR] No model loaded. Please load a model first."
 
         self._cancel_requested = False
 
@@ -88,22 +90,31 @@ class AirLLMEngine:
                     "max_new_tokens": self.max_new_tokens,
                     "temperature": self.temperature,
                 }
-
-                if stream:
-                    for token in self._stream_generate(prompt, **kwargs):
-                        if self._cancel_requested:
-                            break
-                        yield token
-                else:
-                    result = self._full_generate(prompt, **kwargs)
-                    return result
-
+                return self._full_generate(prompt, **kwargs)
             except Exception as e:
-                error_msg = f"[ERROR] Generation failed: {e}"
-                if stream:
-                    yield error_msg
-                    return
-                return error_msg
+                return f"[ERROR] Generation failed: {e}"
+
+    def _generate_stream(self, messages: list[dict]) -> Generator[str, None, None]:
+        """Streaming generation — yields tokens one by one."""
+        if not self._loaded or self.model is None:
+            yield "[ERROR] No model loaded. Please load a model first."
+            return
+
+        self._cancel_requested = False
+
+        with self._lock:
+            try:
+                prompt = self._build_prompt(messages)
+                kwargs = {
+                    "max_new_tokens": self.max_new_tokens,
+                    "temperature": self.temperature,
+                }
+                for token in self._stream_generate(prompt, **kwargs):
+                    if self._cancel_requested:
+                        break
+                    yield token
+            except Exception as e:
+                yield f"[ERROR] Generation failed: {e}"
 
     def _build_prompt(self, messages: list[dict]) -> str:
         """Build a chat prompt from message history."""
