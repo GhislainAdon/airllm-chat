@@ -3,6 +3,8 @@
 airllm>=0.2.0
 
 # ML Dependencies (usually pulled by airllm, listed for clarity)
+# For CPU-only torch (smaller download), install separately with:
+#   pip install torch --extra-index-url https://download.pytorch.org/whl/cpu
 torch>=2.0.0
 transformers>=4.30.0
 accelerate>=0.20.0
