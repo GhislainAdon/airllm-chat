@@ -82,24 +82,7 @@ jobs:
           pip install airllm torch --extra-index-url https://download.pytorch.org/whl/cpu
 
       - name: Run tests
-        run: |
-          if [ -d "tests" ]; then
-            python -m pytest tests/ -v --tb=short --cov=. --cov-report=xml
-          else
-            echo "No tests directory found. Running basic smoke test..."
-            python << 'PYEOF'
-from airllm_engine import AirLLMEngine
-e = AirLLMEngine()
-assert e.is_loaded == False
-info = e.info
-assert 'model_path' in info
-assert 'loaded' in info
-e.set_params(max_new_tokens=1024, temperature=0.8)
-assert e.max_new_tokens == 1024
-assert e.temperature == 0.8
-print('All smoke tests passed!')
-PYEOF
-          fi
+        run: python -m pytest tests/ -v --tb=short
 
       - name: Import check
         run: |
