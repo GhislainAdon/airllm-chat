@@ -1,6 +1,13 @@
 # AirLLM Chat
 
+[![CI](https://img.shields.io/github/actions/workflow/status/YOUR_USERNAME/airllm-chat/ci.yml?branch=main&label=CI&style=flat-square)](https://github.com/YOUR_USERNAME/airllm-chat/actions)
+[![Release](https://img.shields.io/github/v/release/YOUR_USERNAME/airllm-chat?style=flat-square&color=green)](https://github.com/YOUR_USERNAME/airllm-chat/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey?style=flat-square)](#)
+
 A ChatGPT-style local AI chat interface powered by the **airllm** library. Run large language models entirely on your machine — no cloud, no API keys, no data sent externally.
+
+**Pre-built binaries available on [GitHub Releases](https://github.com/YOUR_USERNAME/airllm-chat/releases) — no Python needed!**
 
 ## Features
 
@@ -150,6 +157,49 @@ python app.py --model "C:\Models\llama-7b-chat.Q4_K_M.gguf"
 python app.py --host 0.0.0.0 --port 8080
 ```
 
+## CI/CD & Releases
+
+The project includes a full GitHub Actions pipeline:
+
+### Pipelines
+
+| Workflow | Trigger | What it does |
+|----------|---------|-------------|
+| **CI** | Push / PR to main | Lint, type check, test, build smoke test |
+| **Build** | Push to main / Manual | Build binaries for all platforms (artifacts, no release) |
+| **Release** | Tag push (`v*`) | Build all platforms + create GitHub Release |
+
+### How to Create a Release
+
+```bash
+# 1. Tag your version
+git tag v1.0.0
+git push origin v1.0.0
+
+# 2. GitHub Actions automatically:
+#    - Builds Windows .exe
+#    - Builds Linux binary (tar.gz)
+#    - Builds macOS binary (zip)
+#    - Creates source tarball + zip
+#    - Generates SHA256 checksums
+#    - Publishes everything as a GitHub Release
+```
+
+### Manual Build (without release)
+
+Go to **Actions > Build** in GitHub, click **Run workflow**, select which platforms to build. Binaries are available as artifacts for 14 days.
+
+### Release Artifacts
+
+| File | Platform | Description |
+|------|----------|-------------|
+| `airllm-chat-windows-x64.zip` | Windows | Standalone .exe bundle |
+| `airllm-chat-linux-x64.tar.gz` | Linux | Pre-built binary |
+| `airllm-chat-macos.zip` | macOS | Pre-built binary |
+| `airllm-chat-src.tar.gz` | All | Source code |
+| `airllm-chat-src.zip` | All | Source code |
+| `SHA256SUMS.txt` | All | Integrity checksums |
+
 ## Supported Models
 
 airllm supports various quantized model formats. Popular choices:
@@ -167,17 +217,27 @@ You can also use **any local model path** — just type or paste the path in the
 
 ```
 airllm-chat/
-├── app.py                  # Main server & API endpoints
+├── .github/
+│   ├── workflows/
+│   │   ├── ci.yml          # CI pipeline (lint, test, build check)
+│   │   ├── build.yml       # On-demand build (manual trigger)
+│   │   └── release.yml     # Full release (tag trigger)
+│   └── RELEASE_NOTES.md    # Release notes template
+├── app.py                  # Main server & API endpoints (OpenAI-compatible)
 ├── airllm_engine.py        # airllm wrapper engine
 ├── airllm-chat.spec        # PyInstaller build spec
 ├── build.bat               # Windows build script
+├── build.sh                # Linux/macOS build script
 ├── run.bat                 # Windows run script
+├── run.sh                  # Linux/macOS run script
 ├── requirements.txt        # Python dependencies
 ├── templates/
 │   └── index.html          # Main HTML page
-└── static/
-    ├── style.css           # Dark theme styles
-    └── app.js              # Frontend JavaScript
+├── static/
+│   ├── style.css           # Dark theme styles
+│   └── app.js              # Frontend JavaScript
+├── LICENSE                 # MIT License
+└── README.md               # This file
 ```
 
 ## System Requirements
@@ -198,6 +258,18 @@ airllm-chat/
 
 **Build fails with PyInstaller** — Make sure all dependencies are installed in the virtual environment. Try deleting `venv/` and `build/` folders, then rebuild.
 
+## API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | ChatGPT-style web UI |
+| `/v1/chat/completions` | POST | OpenAI-compatible chat (streaming supported) |
+| `/v1/models` | GET | List available models (OpenAI format) |
+| `/api/chat` | POST | Internal chat endpoint |
+| `/api/load` | POST | Load a model |
+| `/api/settings` | POST | Update temperature/tokens |
+| `/api/info` | GET | Engine status |
+
 ## License
 
-MIT
+[MIT](LICENSE)

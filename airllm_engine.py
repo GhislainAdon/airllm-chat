@@ -1,11 +1,13 @@
 """
-airllm Engine Wrapper
+AirLLM Engine Wrapper
 Handles model loading and text generation using the airllm library.
 """
 
+from __future__ import annotations
+
 import threading
 import time
-from typing import Generator, Optional
+from typing import Generator, Optional, Union
 
 
 class AirLLMEngine:
@@ -19,6 +21,7 @@ class AirLLMEngine:
         self._lock = threading.Lock()
         self._loaded = False
         self._load_error: Optional[str] = None
+        self._cancel_requested = False
 
     def load_model(self) -> dict:
         """Load the airllm model. Returns status dict."""
@@ -27,38 +30,72 @@ class AirLLMEngine:
         try:
             import airllm
             self.model_path = self.model_path or "garage-bAInd/Platypus2-70B-instruct"
+            print(f"  [airllm] Loading model: {self.model_path}")
             self.model = airllm.AutoModelForCausalLM.from_pretrained(self.model_path)
             self._loaded = True
+            self._load_error = None
             return {"status": "ok", "message": f"Model loaded: {self.model_path}"}
         except Exception as e:
             self._load_error = str(e)
             return {"status": "error", "message": f"Failed to load model: {e}"}
 
-    def generate(self, messages: list[dict], stream: bool = False) -> Generator[str, None, None] | str:
+    def unload_model(self) -> dict:
+        """Unload the model and free GPU memory."""
+        with self._lock:
+            if self.model is not None:
+                try:
+                    del self.model
+                except Exception:
+                    pass
+                self.model = None
+                self._loaded = False
+                self.model_path = ""
+                # Force GPU memory cleanup
+                try:
+                    import torch
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+                except ImportError:
+                    pass
+                return {"status": "ok", "message": "Model unloaded."}
+            return {"status": "ok", "message": "No model to unload."}
+
+    def cancel_generation(self) -> None:
+        """Request cancellation of the current generation."""
+        self._cancel_requested = True
+
+    def generate(
+        self, messages: list[dict], stream: bool = False
+    ) -> Union[Generator[str, None, None], str]:
         """
         Generate a response from the model.
         messages: list of {"role": "user"|"assistant", "content": "..."}
         stream: if True, yields tokens as they are generated.
         """
         if not self._loaded or self.model is None:
+            error = "[ERROR] No model loaded. Please load a model first."
             if stream:
-                yield "[ERROR] No model loaded. Please load a model first."
+                yield error
                 return
-            return "[ERROR] No model loaded. Please load a model first."
+            return error
+
+        self._cancel_requested = False
 
         with self._lock:
             try:
                 prompt = self._build_prompt(messages)
-                generation_kwargs = {
+                kwargs = {
                     "max_new_tokens": self.max_new_tokens,
                     "temperature": self.temperature,
                 }
 
                 if stream:
-                    for token in self._stream_generate(prompt, **generation_kwargs):
+                    for token in self._stream_generate(prompt, **kwargs):
+                        if self._cancel_requested:
+                            break
                         yield token
                 else:
-                    result = self._full_generate(prompt, **generation_kwargs)
+                    result = self._full_generate(prompt, **kwargs)
                     return result
 
             except Exception as e:
@@ -90,9 +127,7 @@ class AirLLMEngine:
 
     def _stream_generate(self, prompt: str, **kwargs) -> Generator[str, None, None]:
         """Stream tokens from the model."""
-        # airllm uses a generator-style API
         try:
-            # airllm v0.2+ supports streaming via generate()
             input_ids = self.model.tokenize(prompt)
             prev_output = ""
             for output in self.model.generate(
@@ -109,10 +144,9 @@ class AirLLMEngine:
                     text = output.get("text", "")
                     if text:
                         yield text
-        except TypeError:
+        except (TypeError, AttributeError):
             # Fallback for older airllm: non-streaming then chunk
             result = self._full_generate(prompt, **kwargs)
-            # Simulate streaming by yielding word-by-word
             words = result.split(" ")
             for i, word in enumerate(words):
                 token = word if i == 0 else " " + word
@@ -138,8 +172,13 @@ class AirLLMEngine:
         except Exception as e:
             return f"[ERROR] Generation exception: {e}"
 
-    def set_params(self, max_new_tokens: int = None, temperature: float = None, model_path: str = None):
-        """Update generation parameters."""
+    def set_params(
+        self,
+        max_new_tokens: Optional[int] = None,
+        temperature: Optional[float] = None,
+        model_path: Optional[str] = None,
+    ) -> dict:
+        """Update generation parameters. If model_path changes, reloads the model."""
         if max_new_tokens is not None:
             self.max_new_tokens = max_new_tokens
         if temperature is not None:
@@ -163,4 +202,5 @@ class AirLLMEngine:
             "max_new_tokens": self.max_new_tokens,
             "temperature": self.temperature,
             "error": self._load_error,
+            "version": "1.0.0",
         }

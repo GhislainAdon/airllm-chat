@@ -193,7 +193,6 @@
         const conv = state.conversations.find(c => c.id === state.currentConvId);
         if (conv) {
             conv.messages = [...state.messages];
-            // Auto-title from first user message
             if (conv.messages.length > 0 && conv.title === 'New Chat') {
                 const firstUser = conv.messages.find(m => m.role === 'user');
                 if (firstUser) {
@@ -201,7 +200,19 @@
                 }
             }
         }
-        localStorage.setItem('airllm_conversations', JSON.stringify(state.conversations));
+        try {
+            localStorage.setItem('airllm_conversations', JSON.stringify(state.conversations));
+        } catch (e) {
+            if (e.name === 'QuotaExceededError' && state.conversations.length > 5) {
+                state.conversations = state.conversations.slice(0, Math.max(3, state.conversations.length - 5));
+                try {
+                    localStorage.setItem('airllm_conversations', JSON.stringify(state.conversations));
+                } catch (e2) {
+                    localStorage.removeItem('airllm_conversations');
+                }
+                showToast('Old conversations trimmed to free storage.', 'info');
+            }
+        }
     }
 
     function renderChatHistory() {
@@ -354,9 +365,9 @@
         scrollToBottom();
 
         let fullResponse = '';
+        let renderCounter = 0;
 
         try {
-            // Use streaming
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -392,14 +403,19 @@
                         const token = data.choices?.[0]?.delta?.content || '';
                         if (token) {
                             fullResponse += token;
-                            streamContainer.innerHTML = formatContent(fullResponse);
-                            scrollToBottom();
+                            renderCounter++;
+                            if (renderCounter % 3 === 0) {
+                                streamContainer.innerHTML = formatContent(fullResponse);
+                                scrollToBottom();
+                            }
                         }
                     } catch (e) {
                         // Skip malformed JSON
                     }
                 }
             }
+            streamContainer.innerHTML = formatContent(fullResponse);
+            scrollToBottom();
 
         } catch (e) {
             // If streaming fails, try non-streaming fallback
@@ -525,7 +541,13 @@
             });
         });
 
-        // Load saved data
+        // Load saved data (graceful fallback)
+        try {
+            state.conversations = JSON.parse(localStorage.getItem('airllm_conversations') || '[]');
+        } catch (e) {
+            state.conversations = [];
+            localStorage.removeItem('airllm_conversations');
+        }
         renderChatHistory();
         if (state.conversations.length > 0) {
             switchConversation(state.conversations[0].id);
