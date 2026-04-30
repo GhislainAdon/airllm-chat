@@ -19,6 +19,16 @@ except ImportError:
     psutil = None
 
 
+def _read_version() -> str:
+    """Read version from VERSION file next to this script."""
+    version_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "VERSION")
+    try:
+        with open(version_file, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        return "0.0.0-dev"
+
+
 class AirLLMEngine:
     """Wraps airllm for chat-style inference with streaming support."""
 
@@ -469,5 +479,5 @@ class AirLLMEngine:
             "max_new_tokens": self.max_new_tokens,
             "temperature": self.temperature,
             "error": self._load_error,
-            "version": "1.0.0",
+            "version": _read_version(),
         }
